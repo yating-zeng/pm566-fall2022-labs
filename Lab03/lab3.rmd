@@ -8,6 +8,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Step 1. Read in the data
+
 ```{r 1.Read the data}
 if (!file.exists("met_all.gz")){
   download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz", "met_all.gz", 
@@ -18,11 +20,15 @@ library(R.utils)
 met <- data.table::fread("met_all.gz")
 ```
 
+## Step 2. Check the dimensions, headers, footers. How many columns, rows are there?
+
 ```{r 2.Check the dimensions, headers, footers}
 dim(met)
 head(met)
 tail(met)
 ```
+
+## Step 3. Take a look at the variables.
 
 ```{r 3.Take a look at the variables}
 str(met)
