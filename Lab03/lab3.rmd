@@ -1,0 +1,45 @@
+---
+title: "Lab 03"
+author: "Yating Zeng"
+date: "9/7/2022"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r 1.Read the data}
+if (!file.exists("met_all.gz")){
+  download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz", "met_all.gz", 
+                method="libcurl", timeout = 60)
+}
+
+library(R.utils)
+met <- data.table::fread("met_all.gz")
+```
+
+```{r 2.Check the dimensions, headers, footers}
+dim(met)
+head(met)
+tail(met)
+```
+
+```{r 3.Take a look at the variables}
+str(met)
+summary(met[,8:12])
+
+```
+
+```{r 4.Take a closer look at the key variables}
+table(met$year)
+table(met$day)
+summary(met$temp)
+summary(met$elev)
+summary(met$wind.sp)
+met[met$elev==9999.0] <- NA
+summary(met$elev)
+```
+
+```{r checking the missing value}
+mean(is.na(met$temp))
+```
