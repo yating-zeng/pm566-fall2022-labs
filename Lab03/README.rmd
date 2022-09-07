@@ -140,3 +140,25 @@ leaflet(elev) %>%
   addProviderTiles('OpenStreetMap') %>% 
   addCircles(lat=~lat,lng=~lon, opacity=1, fillOpacity=1, radius=100)
 ```
+
+```{r}
+if (!require(lubridate)){
+  install.packages("lubridate")
+  library(lubridate)  
+}
+elev$date <- with(elev, ymd_h(paste(year, month, day, hour, sep= ' ')))
+summary(elev$date)
+```
+
+```{r}
+elev <- elev[order(date)]
+head(elev)
+```
+
+```{r}
+plot(elev$date, elev$temp, type='l')
+```
+
+```{r}
+plot(elev$date, elev$wind.sp, type='l')
+```
