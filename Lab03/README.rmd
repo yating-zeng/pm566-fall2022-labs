@@ -1,0 +1,142 @@
+---
+title: "Lab 03"
+author: "Yating Zeng"
+date: "9/7/2022"
+output: github_document
+always_allow_html: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Step 1. Read in the data
+
+```{r 1.Read the data}
+if (!file.exists("met_all.gz")){
+  download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz", "met_all.gz", 
+                method="libcurl", timeout = 60)
+}
+
+library(R.utils)
+met <- data.table::fread("met_all.gz")
+```
+
+## Step 2. Check the dimensions, headers, footers. How many columns, rows are there?
+
+```{r 2.Check the dimensions, headers, footers}
+dim(met)
+head(met)
+tail(met)
+```
+
+## Step 3. Take a look at the variables.
+
+```{r 3.Take a look at the variables}
+str(met)
+summary(met[,8:12])
+```
+
+## Step 4. Take a closer look at the key variables.
+
+```{r 4.Take a closer look at the key variables}
+table(met$year)
+```
+
+```{r}
+table(met$day)
+```
+
+```{r}
+table(met$hour)
+```
+
+```{r}
+summary(met$temp)
+```
+```{r}
+summary(met$elev)
+```
+```{r}
+summary(met$wind.sp)
+```
+OR by alternative codes
+```{r}
+met[, summary(elev)]
+summary(met$temp)
+summary(met$wind.sp)
+```
+Check the misssing value
+```{r checking the missing value}
+mean(is.na(met$temp))
+```
+
+Replace elevations with 9999 as NA.
+
+```{r}
+met[met$elev==9999.0] <- NA
+summary(met$elev)
+```
+
+The weather station with the highest elevation is at `r max(met$elev, na.rm=TRUE)` meters
+
+Remove the observation with temperature no more than -40C
+
+```{r}
+met <- met[temp>-40]
+met2 <- met[order(temp)]
+head(met2)
+```
+There is a -17.2C temperature reading that seems suspicious.
+
+```{r}
+met <- met[temp>-15][order(temp)]
+```
+We removed temperatures colder than -15C. The new dataset has minimum temp -3C which is reasonable.
+
+## Step 5. Check the data against an external data source.
+
+## Step 6. Calculate summary statistics
+
+```{r}
+met[elev==max(elev,na.rm=TRUE),summary(wind.sp)]
+met[elev==max(elev,na.rm=TRUE),summary(temp)]
+```
+
+
+```{r}
+met[elev==max(elev,na.rm=TRUE),.(
+  temp_wind    = cor(temp,  wind.sp, use = "complete"),
+  temp_hour    = cor(temp,   hour,   use = "complete"),
+  wind.sp_day  = cor(wind.sp, day,   use = "complete"),
+  wind.sp_hour = cor(wind.sp, hour,  use = "complete")
+)]
+```
+
+## Step 7. Exploratory graphs
+
+```{r}
+hist(met$elev, breaks=100)
+```
+
+```{r}
+hist(met$temp)
+```
+
+```{r}
+hist(met$wind.sp)
+```
+
+```{r}
+if (!require(leaflet)){
+  install.packages("leaflet")
+  library(leaflet)  
+}
+
+elev <- met[elev==max(elev)]
+```
+
+```{r}
+leaflet(elev) %>%
+  addProviderTiles('OpenStreetMap') %>% 
+  addCircles(lat=~lat,lng=~lon, opacity=1, fillOpacity=1, radius=100)
+```
