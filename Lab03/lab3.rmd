@@ -33,18 +33,46 @@ tail(met)
 ```{r 3.Take a look at the variables}
 str(met)
 summary(met[,8:12])
-
 ```
+
+## Step 4. Take a closer look at the key variables.
 
 ```{r 4.Take a closer look at the key variables}
 table(met$year)
+```
+
+```{r}
 table(met$day)
+```
+
+```{r}
+table(met$hour)
+```
+
+```{r}
 summary(met$temp)
+```
+```{r}
 summary(met$elev)
+```
+```{r}
 summary(met$wind.sp)
+```
+OR by alternative codes
+```{r}
+met[, summary(elev)]
+summary(met$temp)
+summary(met$wind.sp)
+```
+
+Replace elevations with 9999 as NA.
+
+```{r}
 met[met$elev==9999.0] <- NA
 summary(met$elev)
 ```
+
+The weather station with the highest elevation is at `r max(met$elev, na.rm=TRUE)` meters
 
 ```{r checking the missing value}
 mean(is.na(met$temp))
