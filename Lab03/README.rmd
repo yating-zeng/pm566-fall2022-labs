@@ -139,6 +139,7 @@ elev <- met[elev==max(elev)]
 leaflet(elev) %>%
   addProviderTiles('OpenStreetMap') %>% 
   addCircles(lat=~lat,lng=~lon, opacity=1, fillOpacity=1, radius=100)
+#mapview::mapshot(leaflet(elev), file ="/Users/adbb/pm566-allprojects/PM566_Fall_Lab/Lab03/README_files/map.png")
 ```
 
 ```{r}
