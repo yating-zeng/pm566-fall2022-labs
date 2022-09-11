@@ -134,6 +134,14 @@ if (!require(leaflet)){
 
 elev <- met[elev==max(elev)]
 ```
+```{R the methods to show the map from Professor}
+#install.packages("webshot")
+#webshot::install_phantomjs()
+
+#library(leaflet)
+
+#library(webshot)
+```
 
 ```{r}
 leaflet(elev) %>%
