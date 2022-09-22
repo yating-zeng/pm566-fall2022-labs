@@ -1,7 +1,7 @@
 ---
-title: "Lab05"
+title: "Lab 05"
 author: "Yating Zeng"
-date: '2022-09-21'
+date: "`r Sys.Date()`"
 output: github_document
 always_allow_html: true
 ---
@@ -10,7 +10,7 @@ always_allow_html: true
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r install-libraries}
 library(lubridate)
 library(tidyverse)
 library(data.table)
@@ -20,33 +20,28 @@ library(dtplyr)
 
 ## Step 1. Read in the data
 First download and then read in with data.table:fread()
-```{r 1.Read the data}
+
+```{r read-data, cache=TRUE}
 if (!file.exists("../lab03/met_all.gz")){
-  download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz", "met_all.gz", 
-                method="libcurl", timeout = 60)
+  download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz", "met_all.gz", method="libcurl", timeout = 60)
 }
 
-library(R.utils)
 met <- data.table::fread("../lab03/met_all.gz")
 ```
 
+
+
+## 2. Prepare the data
+
 Remove temperatures less than -17C and change elev 9999 to missing value code.
-
-```{r remove temp<-17}
-met <-met[temp >-17][elev == 9999.0, elev :=NA]
-```
-
-Make sure there are no missing data in the key variables coded as 9999, 999, etc
-
 ```{r remove-low-temp}
-met[met$elev==9999.0] <- NA
-summary(met$elev)
-# check no 9999s in other important variables
+met <- met[met$temp > -17][elev == 9999.0, elev:= NA]
 ```
 
 
-Read in the station data
-```{r}
+## Read in the station data
+
+```{r stations, cache = TRUE}
 # Download the data
 stations <- fread("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.csv")
 stations[, USAF := as.integer(USAF)]
@@ -67,9 +62,10 @@ stations[, n := 1:.N, by = .(USAF)]
 stations <- stations[n == 1,][, n := NULL]
 ```
 
-Merge met data with stations
-```{r}
-met <-
+Merge met data with stations.
+
+```{r merge_datatables}
+met <- 
   merge(
   # Data
   x     = met,      
@@ -81,56 +77,112 @@ met <-
   all.x = TRUE,      
   all.y = FALSE
   )
+
 nrow(met)
 ```
 
-#Question 1: Representative station for the US
+# Question 1: Representative station for the US
 
-Compute mean temperature, wind speed, and atmospheric pressure fr each weather station, and pick the weather
+Compute mean temperature, wind speed and atmospheric pressure for each weather station, and pick the weather station with the average value closest to the median for the US.
 
 ```{r}
-station_average <-
-  met[ , .(
-    temp      = mean(temp, na.rm=T),
-    wind.sp   = mean(wind.sp, na.rm=T),
-    atm.press = mean(atm.press, na.rm=T)
-  ), by = USAFID]
+station_averages <- 
+    met[ , .(
+      temp      = mean(temp, na.rm = T), 
+      wind.sp   = mean(wind.sp, na.rm = T),
+      atm.press = mean(atm.press, na.rm = T)
+    ), by = USAFID]
 ```
 
-The above computes the mean by weather station
-Now let's compute the median calue for each variable.
+The above computes the mean by weather station.
+Now let's compute the median value for each variable.
 
 ```{r}
-stmeds <- station_average[ , .(
-  temp50     = median(temp, na.rm=T),
-  windsp50   = median(wind.sp, na.rm=T),
-  atmpress50 = median(atm.press,na.rm=T)
+stmeds <- station_averages[, .(
+      temp50      = median(temp, na.rm = T), 
+      wind.sp50   = median(wind.sp, na.rm = T),
+      atm.press50 = median(atm.press, na.rm = T)
 )]
 stmeds
 ```
 
-A helpful function we might want to use 'which.min()'.
+A helpful function we might want to use 'which.min()'
 
 ```{r}
-station_average[ ,
-                 temp_dist50 := abs(temp - stmeds$temp50)][order(temp_dist50)]
-head(station_average)
+station_averages[ , 
+                  temp_dist50 := abs(temp- stmeds$temp50)][order(temp_dist50)]
 ```
 
+Let's use which.min
 
 ```{r}
-station_average[ which.min(temp_dist50)]
+station_averages[ which.min(temp_dist50)]
 ```
+
 It matches the result above.
 
+# Question 2: Representative station per state
+Just like the previous question, you are asked to identify what is the most representative, the median, station per state. This time, instead of looking at one variable at a time, look at the euclidean distance. If multiple stations show in the median, select the one located at the lowest latitude.
+
+```{r} 
+station_averages <- 
+    met[ , .(
+      temp      = mean(temp, na.rm = T), 
+      wind.sp   = mean(wind.sp, na.rm = T),
+      atm.press = mean(atm.press, na.rm = T)
+    ), by = .(USAFID, STATE)]
+head(station_averages)
+```
+
+```{r}
+statemeds <- station_averages[, .(
+      temp50      = median(temp, na.rm = T), 
+      wind.sp50   = median(wind.sp, na.rm = T),
+      atm.press50 = median(atm.press, na.rm = T)
+), by = STATE]
+statemeds
+```
+
+```{r}
+station_averages <- merge(
+  x= station_averages,
+  y= statemeds,
+  by.x = "STATE",
+  by.y = "STATE",
+  all.x= TRUE,
+  all.y = FALSE
+)
 
 
+```
 
 
+```{r}
+station_averages[, temp_dist_state50 := temp-temp50]
 
+station_averages[,windsp_dist_state50 := wind.sp - wind.sp50]
 
+station_averages
+```
 
+```{r}
+station_averages[, eucdist := temp_dist_state50^2 + windsp_dist_state50^2]
+```
 
+```{r}
+repstation <- station_averages[ , .(
+              eucdist = min(eucdist, na.rm=T)) 
+              , by=STATE]
+```
 
-
+```{r}
+merge(
+  x= station_averages, 
+  y= repstation, 
+  by.x = c("eucdist", "STATE"),
+  by.y = c("eucdist", "STATE"),
+  all.x = FALSE, 
+  all.y = TRUE
+) 
+```
 
