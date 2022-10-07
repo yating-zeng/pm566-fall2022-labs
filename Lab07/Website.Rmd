@@ -2,7 +2,8 @@
 title: "Lab07"
 author: "Yating Zeng"
 date: '2022-10-05'
-output: html_document
+output: github_document
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
