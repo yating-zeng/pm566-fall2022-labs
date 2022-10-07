@@ -366,7 +366,359 @@ pre code {
 </div>
 
 
-
+<div id="question-1.-how-many-papers-are-on-sars-cov-2" class="section level1">
+<h1>Question 1. How many papers are on Sars-cov-2?</h1>
+<pre class="r"><code># Downloading the website
+website &lt;- xml2::read_html(&quot;https://pubmed.ncbi.nlm.nih.gov/?term=sars-cov-2&quot;)
+# Finding the counts
+counts &lt;- xml2::xml_find_first(website, &quot;/html/body/main/div[9]/div[2]/div[2]/div[1]/div[1]&quot;)
+# Turning it into text
+counts &lt;- as.character(counts)
+# Extracting the data using regex
+stringr::str_extract(counts, &quot;[0-9,]+&quot;)</code></pre>
+<pre><code>## [1] &quot;179,134&quot;</code></pre>
+<div id="question-2-academic-publications-on-covid19-and-hawaii" class="section level2">
+<h2>Question 2: Academic publications on COVID19 and Hawaii</h2>
+<p>Query the following The parameters passed to the query are documented
+here. Use the function httr::GET() to make the following query:</p>
+<p>Baseline URL: <a href="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi" class="uri">https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi</a></p>
+<p>Query parameters: db: pubmed<br />
+term: covid19 hawaii<br />
+retmax: 1000</p>
+<pre class="r"><code>library(httr)
+query_ids &lt;- GET(
+  url   = &quot;https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi&quot;,
+  query = list(
+    db      = &quot;pubmed&quot;,
+    term    = &quot;covid19 hawaii&quot;,
+    retmax  = 1000
+  ), 
+)
+# Extracting the content of the response of GET
+ids &lt;- httr::content(query_ids)</code></pre>
+</div>
+<div id="question-3-get-details-about-the-articles" class="section level2">
+<h2>Question 3: Get details about the articles</h2>
+<p>The Ids are wrapped around text in the following way: <Id>… id number
+…</Id>. we can use a regular expression that extract that information.
+Fill out the following lines of code:</p>
+<pre class="r"><code># Turn the result into a character vector
+ids &lt;- as.character(ids)
+# Find all the ids 
+ids &lt;- stringr::str_extract_all(ids, &quot;&lt;Id&gt;[[:digit:]]+&lt;/Id&gt;&quot;)[[1]]
+# Remove all the leading and trailing &lt;Id&gt; &lt;/Id&gt;. Make use of &quot;|&quot;
+ids &lt;- stringr::str_remove_all(ids, &quot;&lt;/?Id&gt;&quot;)
+head(ids)</code></pre>
+<pre><code>## [1] &quot;36186620&quot; &quot;36173983&quot; &quot;36146513&quot; &quot;36128780&quot; &quot;36126272&quot; &quot;36108254&quot;</code></pre>
+<p>Grab publications with these Pubmed IDs.</p>
+<pre class="r"><code>publications &lt;- GET(
+  url   = &quot;https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi&quot;,
+  query = list(
+    db  = &quot;pubmed&quot;,
+    id  = paste(ids,collapse = &quot;,&quot;),
+  retmax = 1000,
+  rettype = &quot;abstract&quot;
+    )
+)
+# Extracting the content of the response of GET
+publications &lt;- httr::content(publications)</code></pre>
+</div>
+<div id="question-4.-more-practice-with-regex" class="section level2">
+<h2>Question 4. More practice with regex</h2>
+</div>
+<div id="question-5.-form-a-database" class="section level2">
+<h2>Question 5. Form a database</h2>
+<p>We want to build a dataset which includes the title and the abstract
+of the paper. The title of all records is enclosed by the HTML tag
+ArticleTitle, and the abstract by Abstract.</p>
+<p>Before applying the functions to extract text directly, it will help
+to process the XML a bit. We will use the xml2::xml_children() function
+to keep one element per id. This way, if a paper is missing the
+abstract, or something else, we will be able to properly match PUBMED
+IDS with their corresponding records.</p>
+<pre class="r"><code>pub_char_list &lt;- xml2::xml_children(publications)
+pub_char_list &lt;- sapply(pub_char_list, as.character)</code></pre>
+<p>Now, extract the abstract and article title for each one of the
+elements of pub_char_list. You can either use sapply() as we just did,
+or simply take advantage of vectorization of stringr::str_extract</p>
+<pre class="r"><code>abstracts &lt;- str_extract(pub_char_list, &quot;&lt;Abstract&gt;[[:print:][:space:]]+&lt;/Abstract&gt;&quot;)
+abstracts[[1]]</code></pre>
+<pre><code>## [1] &quot;&lt;Abstract&gt;\n        &lt;AbstractText Label=\&quot;Objectives\&quot; NlmCategory=\&quot;UNASSIGNED\&quot;&gt;COVID-19 disproportionately affects racial/ethnic minorities and vaccine can help mitigate infection and transition, decrease rate of hospitalization, lower mortality rate, and control the pandemic. This study aims to examine disparities in COVID-19 vaccination rate by age among Whites, Hispanics, Blacks, and Asian Americans, and the modification effects by gender and education.&lt;/AbstractText&gt;\n        &lt;AbstractText Label=\&quot;Methods\&quot; NlmCategory=\&quot;UNASSIGNED\&quot;&gt;We used seven waves of biweekly surveys from the Household Pulse Survey collected between July 21, 2021, and October 11, 2021.&lt;/AbstractText&gt;\n        &lt;AbstractText Label=\&quot;Results\&quot; NlmCategory=\&quot;UNASSIGNED\&quot;&gt;Asians reported the highest, Blacks reported the lowest vaccination rate, and gender differences were minimal. Increasing age was associated with higher vaccination rate except for the oldest age group. The decline was from 84.4% (70-79 years) to 41.1% (80-88 years: 41.1%) among Hispanics and 92.8% to 69.6% among Asians. Educational effect was the most salient among younger adults with the largest gaps observed in Blacks. Among 18-29-year Black participants, the vaccination rates were 31.1% (confidence interval [95% CI]: 25.7-37.1) for high school or lower, 58.9% (95% CI: 54.2-63.5) for some college or associate degree, and 74.2% (95% CI: 69.4-78.5) for bachelor or higher degrees, leaving a 43.1% gap between the lowest and the highest education levels. The gaps in this age group were 33.7% among Whites, 32.1% among Hispanics, and 20.5% among Asian Americans.&lt;/AbstractText&gt;\n        &lt;AbstractText Label=\&quot;Conclusion\&quot; NlmCategory=\&quot;UNASSIGNED\&quot;&gt;Our study advances the existing literature on COVID-19 vaccination by providing empirical evidence on the dynamic race/ethnic-age-education differences across racial/ethnic groups. The findings from our study provide scientific foundation for the development of more strategies to improve vaccination rate for the minority populations.&lt;/AbstractText&gt;\n        &lt;CopyrightInformation&gt;© Wei Zhang et al., 2022; Published by Mary Ann Liebert, Inc.&lt;/CopyrightInformation&gt;\n      &lt;/Abstract&gt;&quot;</code></pre>
+<pre class="r"><code>abstracts &lt;- str_remove_all(abstracts, &quot;&lt;/?[[:alnum:]- =\&quot;]+&gt;&quot;) 
+abstracts[[1]]</code></pre>
+<pre><code>## [1] &quot;\n        COVID-19 disproportionately affects racial/ethnic minorities and vaccine can help mitigate infection and transition, decrease rate of hospitalization, lower mortality rate, and control the pandemic. This study aims to examine disparities in COVID-19 vaccination rate by age among Whites, Hispanics, Blacks, and Asian Americans, and the modification effects by gender and education.\n        We used seven waves of biweekly surveys from the Household Pulse Survey collected between July 21, 2021, and October 11, 2021.\n        Asians reported the highest, Blacks reported the lowest vaccination rate, and gender differences were minimal. Increasing age was associated with higher vaccination rate except for the oldest age group. The decline was from 84.4% (70-79 years) to 41.1% (80-88 years: 41.1%) among Hispanics and 92.8% to 69.6% among Asians. Educational effect was the most salient among younger adults with the largest gaps observed in Blacks. Among 18-29-year Black participants, the vaccination rates were 31.1% (confidence interval [95% CI]: 25.7-37.1) for high school or lower, 58.9% (95% CI: 54.2-63.5) for some college or associate degree, and 74.2% (95% CI: 69.4-78.5) for bachelor or higher degrees, leaving a 43.1% gap between the lowest and the highest education levels. The gaps in this age group were 33.7% among Whites, 32.1% among Hispanics, and 20.5% among Asian Americans.\n        Our study advances the existing literature on COVID-19 vaccination by providing empirical evidence on the dynamic race/ethnic-age-education differences across racial/ethnic groups. The findings from our study provide scientific foundation for the development of more strategies to improve vaccination rate for the minority populations.\n        © Wei Zhang et al., 2022; Published by Mary Ann Liebert, Inc.\n      &quot;</code></pre>
+<pre class="r"><code>abstracts &lt;- str_replace_all(abstracts, &quot;[[:space:]]+&quot;,&quot; &quot;)
+abstracts[[1]]</code></pre>
+<pre><code>## [1] &quot; COVID-19 disproportionately affects racial/ethnic minorities and vaccine can help mitigate infection and transition, decrease rate of hospitalization, lower mortality rate, and control the pandemic. This study aims to examine disparities in COVID-19 vaccination rate by age among Whites, Hispanics, Blacks, and Asian Americans, and the modification effects by gender and education. We used seven waves of biweekly surveys from the Household Pulse Survey collected between July 21, 2021, and October 11, 2021. Asians reported the highest, Blacks reported the lowest vaccination rate, and gender differences were minimal. Increasing age was associated with higher vaccination rate except for the oldest age group. The decline was from 84.4% (70-79 years) to 41.1% (80-88 years: 41.1%) among Hispanics and 92.8% to 69.6% among Asians. Educational effect was the most salient among younger adults with the largest gaps observed in Blacks. Among 18-29-year Black participants, the vaccination rates were 31.1% (confidence interval [95% CI]: 25.7-37.1) for high school or lower, 58.9% (95% CI: 54.2-63.5) for some college or associate degree, and 74.2% (95% CI: 69.4-78.5) for bachelor or higher degrees, leaving a 43.1% gap between the lowest and the highest education levels. The gaps in this age group were 33.7% among Whites, 32.1% among Hispanics, and 20.5% among Asian Americans. Our study advances the existing literature on COVID-19 vaccination by providing empirical evidence on the dynamic race/ethnic-age-education differences across racial/ethnic groups. The findings from our study provide scientific foundation for the development of more strategies to improve vaccination rate for the minority populations. © Wei Zhang et al., 2022; Published by Mary Ann Liebert, Inc. &quot;</code></pre>
+<p>Now get the titles:</p>
+<pre class="r"><code>titles &lt;- str_extract(pub_char_list, &quot;&lt;ArticleTitle&gt;[[:print:][:space:]]+&lt;/ArticleTitle&gt;&quot;)
+titles[[1]]</code></pre>
+<pre><code>## [1] &quot;&lt;ArticleTitle&gt;Racial/Ethnic Disparities in Getting COVID-19 Vaccine: Do Age, Gender, and Education Matter?&lt;/ArticleTitle&gt;&quot;</code></pre>
+<pre class="r"><code>titles &lt;- str_remove_all(titles, &quot;&lt;/?[[:alnum:]- =\&quot;]+&gt;&quot;)
+titles[[1]]</code></pre>
+<pre><code>## [1] &quot;Racial/Ethnic Disparities in Getting COVID-19 Vaccine: Do Age, Gender, and Education Matter?&quot;</code></pre>
+<p>Finally the dataset:</p>
+<pre class="r"><code>database &lt;- data.frame(
+  PubMedId = ids,
+  Title    = titles,
+  Abstract = abstracts
+)
+knitr::kable(database[1:8,], caption = &quot;Some papers about Covid19 and Hawaii&quot;)</code></pre>
+<table>
+<caption>Some papers about Covid19 and Hawaii</caption>
+<colgroup>
+<col width="0%" />
+<col width="5%" />
+<col width="94%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">PubMedId</th>
+<th align="left">Title</th>
+<th align="left">Abstract</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">36186620</td>
+<td align="left">Racial/Ethnic Disparities in Getting COVID-19 Vaccine:
+Do Age, Gender, and Education Matter?</td>
+<td align="left">COVID-19 disproportionately affects racial/ethnic
+minorities and vaccine can help mitigate infection and transition,
+decrease rate of hospitalization, lower mortality rate, and control the
+pandemic. This study aims to examine disparities in COVID-19 vaccination
+rate by age among Whites, Hispanics, Blacks, and Asian Americans, and
+the modification effects by gender and education. We used seven waves of
+biweekly surveys from the Household Pulse Survey collected between July
+21, 2021, and October 11, 2021. Asians reported the highest, Blacks
+reported the lowest vaccination rate, and gender differences were
+minimal. Increasing age was associated with higher vaccination rate
+except for the oldest age group. The decline was from 84.4% (70-79
+years) to 41.1% (80-88 years: 41.1%) among Hispanics and 92.8% to 69.6%
+among Asians. Educational effect was the most salient among younger
+adults with the largest gaps observed in Blacks. Among 18-29-year Black
+participants, the vaccination rates were 31.1% (confidence interval [95%
+CI]: 25.7-37.1) for high school or lower, 58.9% (95% CI: 54.2-63.5) for
+some college or associate degree, and 74.2% (95% CI: 69.4-78.5) for
+bachelor or higher degrees, leaving a 43.1% gap between the lowest and
+the highest education levels. The gaps in this age group were 33.7%
+among Whites, 32.1% among Hispanics, and 20.5% among Asian Americans.
+Our study advances the existing literature on COVID-19 vaccination by
+providing empirical evidence on the dynamic race/ethnic-age-education
+differences across racial/ethnic groups. The findings from our study
+provide scientific foundation for the development of more strategies to
+improve vaccination rate for the minority populations. © Wei Zhang et
+al., 2022; Published by Mary Ann Liebert, Inc.</td>
+</tr>
+<tr class="even">
+<td align="left">36173983</td>
+<td align="left">Hydroxychloroquine/chloroquine for the treatment of
+hospitalized patients with COVID-19: An individual participant data
+meta-analysis.</td>
+<td align="left">Results from observational studies and randomized
+clinical trials (RCTs) have led to the consensus that hydroxychloroquine
+(HCQ) and chloroquine (CQ) are not effective for COVID-19 prevention or
+treatment. Pooling individual participant data, including unanalyzed
+data from trials terminated early, enables more detailed investigation
+of the efficacy and safety of HCQ/CQ among subgroups of hospitalized
+patients. We searched ClinicalTrials.gov in May and June 2020 for
+US-based RCTs evaluating HCQ/CQ in hospitalized COVID-19 patients in
+which the outcomes defined in this study were recorded or could be
+extrapolated. The primary outcome was a 7-point ordinal scale measured
+between day 28 and 35 post enrollment; comparisons used proportional
+odds ratios. Harmonized de-identified data were collected via a common
+template spreadsheet sent to each principal investigator. The data were
+analyzed by fitting a prespecified Bayesian ordinal regression model and
+standardizing the resulting predictions. Eight of 19 trials met
+eligibility criteria and agreed to participate. Patient-level data were
+available from 770 participants (412 HCQ/CQ vs 358 control). Baseline
+characteristics were similar between groups. We did not find evidence of
+a difference in COVID-19 ordinal scores between days 28 and 35
+post-enrollment in the pooled patient population (odds ratio, 0.97; 95%
+credible interval, 0.76-1.24; higher favors HCQ/CQ), and found no
+convincing evidence of meaningful treatment effect heterogeneity among
+prespecified subgroups. Adverse event and serious adverse event rates
+were numerically higher with HCQ/CQ vs control (0.39 vs 0.29 and 0.13 vs
+0.09 per patient, respectively). The findings of this individual
+participant data meta-analysis reinforce those of individual RCTs that
+HCQ/CQ is not efficacious for treatment of COVID-19 in hospitalized
+patients.</td>
+</tr>
+<tr class="odd">
+<td align="left">36146513</td>
+<td align="left">Dynamics of Trust and Consumption of COVID-19
+Information Implicate a Mechanism for COVID-19 Vaccine and Booster
+Uptake.</td>
+<td align="left">Vaccine hesitancy remains a significant barrier to
+achieving herd immunity and preventing the further spread of COVID-19.
+Understanding contributors to vaccine hesitancy and how they change over
+time may improve COVID-19 mitigation strategies and public health
+policies. To date, no mechanism explains how trust in and consumption of
+different sources of information affect vaccine uptake. A total of 1594
+adults enrolled in our COVID-19 testing program completed standardized
+surveys on demographics, vaccination status, use, reliance, and trust in
+sources of COVID-19 information, from September to October 2021, during
+the COVID-19 Delta wave. Of those, 802 individuals (50.3%) completed a
+follow-up survey, from January to February 2022, during the
+Omicron-wave. Regression analyses were performed to understand
+contributors to vaccine and booster uptake over time. Individuals
+vaccinated within two months of eligibility (early vaccinees) tended to
+have more years of schooling, with greater trust in and consumption of
+official sources of COVID-19 information, compared to those who waited
+3-6 months (late vaccinees), or those who remained unvaccinated at 6
+months post-eligibility (non-vaccinees). Most (70.1%) early vaccinees
+took the booster shot, compared to only 30.5% of late vaccinees, with
+the latter group gaining trust and consumption of official information
+after four months. These data provide the foundation for a mechanism
+based on the level of trust in and consumption of official information
+sources, where those who increased their level of trust in and
+consumption of official information sources were more likely to receive
+a booster. This study shows that social factors, including education and
+individual-level degree of trust in (and consumption of) sources of
+COVID-19 information, interact and change over time to be associated
+with vaccine and booster uptakes. These results are critical for the
+development of effective public health policies and offer insights into
+hesitancy over the course of the COVID-19 vaccine and booster
+rollout.</td>
+</tr>
+<tr class="even">
+<td align="left">36128780</td>
+<td align="left">Effects of the COVID 19 Pandemic on School Nurses’
+Resiliency and Ability to Cope: A Mixed Methods Study in the State of
+Hawaii.</td>
+<td align="left">This mixed-method study examined school nurses’
+experiences during the Coronavirus Disease 2019 pandemic related to role
+change, psychological feelings, and coping/resiliency in the State of
+Hawaii. A total of 30 school nurses completed a Brief Resilience Coping
+Scale plus a series of open-ended questions in January 2022. On the
+coping scale, over 40% of participants scored high, 52% scored medium,
+and 7% scored a low resilient/coping level. We did not identify any
+association between coping level and participant characteristics. Three
+qualitative themes emerged: 1) school nurses experience chronic negative
+emotions related to the pandemic, 2) school nurses demonstrate
+attributes of resilience, and 3) school nurses utilize positive coping
+techniques. The pandemic created significant stresses and negative
+emotions among school nurses. Yet, school nurses reported effective
+coping strategies and demonstrated strength/resilience. Support and open
+communication between school nurses, their employers, and other
+school-based stakeholders is needed to provide continued support for
+school nurses.</td>
+</tr>
+<tr class="odd">
+<td align="left">36126272</td>
+<td align="left">Veterans’ Use of Telehealth for Veterans Health
+Administration Community Care Urgent Care During the Early COVID-19
+Pandemic.</td>
+<td align="left">Since the onset of the COVID-19 pandemic, telehealth
+has been an option for Veterans receiving urgent care through Veterans
+Health Administration (VA) Community Care (CC). We assessed use,
+arrangements, Veteran decision-making, and experiences with CC urgent
+care delivered via telehealth. Convergent parallel mixed methods,
+combining multivariable regression analyses of claims data with
+semistructured Veteran interviews. Veterans residing in the Western
+United States and Hawaii, with CC urgent care claims March 1 to
+September 30, 2020. In comparison to having in-person only visits,
+having a telehealth-only visit was more likely for Veterans who were
+non-Hispanic Black, were urban-dwelling, lived further from the clinic
+used, had a COVID-related visit, and did not require an in-person
+procedure. Predictors of having both telehealth and in-person (compared
+with in-person only) visits were other (non-White, non-Black)
+non-Hispanic race/ethnicity, urban-dwelling status, living further from
+the clinic used, and having had a COVID-related visit. Care arrangements
+varied widely; telephone-only care was common. Veteran decisions about
+using telehealth were driven by limitations in in-person care
+availability and COVID-related concerns. Veterans receiving care via
+telehealth generally reported high satisfaction. CC urgent care via
+telehealth played an important role in providing Veterans with care
+access early in the COVID-19 pandemic. Use of telehealth differed by
+Veteran characteristics; lack of in-person care availability was a
+driver. Future work should assess for changes in telehealth use with
+pandemic progression, geographic differences, and impact on care
+quality, care coordination, outcomes, and costs to ensure Veterans’
+optimal and equitable access to care. Copyright © 2022 Wolters Kluwer
+Health, Inc. All rights reserved.</td>
+</tr>
+<tr class="even">
+<td align="left">36108254</td>
+<td align="left">Vaccine-Associated Shifts in SARS-CoV-2 Infectivity
+Among the Native Hawaiian and Other Pacific Islander Population in
+Hawaii.</td>
+<td align="left">Native Hawaiians and other Pacific Islanders (NHPIs)
+across the country have experienced significant disparities because of
+the COVID-19 pandemic. The Pacific Alliance Against COVID-19 used a
+community-based participatory approach involving academic and community
+partners to expand sustainable COVID-19 testing capacity and mitigate
+the severe consequences among NHPI communities in Hawaii. We describe
+the approach of this one-year study, some of the results, and how the
+data are being used to inform next steps for the communities. Clinical
+Trials.gov identifier: NCT04766333. (Am J Public Health. Published
+online ahead of print September 15, 2022:e1-e4. <a href="https://doi.org/10.2105/AJPH.2022.306973" class="uri">https://doi.org/10.2105/AJPH.2022.306973</a>).</td>
+</tr>
+<tr class="odd">
+<td align="left">36091468</td>
+<td align="left">Resilience of breadfruit agro-ecosystems in Hawai’i
+during the COVID-19 pandemic.</td>
+<td align="left">The COVID-19 pandemic is interrupting domestic and
+global food supply chains resulting in reduced access to healthy diverse
+diets. Hawai’i has been described as a model social-ecological system
+and it has been suggested that indigenous agro-ecosystems have the
+potential to be highly productive and resilient under changing land-use
+and climate change disturbance. However, little research has yet been
+conducted exploring the disruption and resilience of agro-ecosystems in
+Hawai’i caused by the COVID-19 pandemic. The breadfruit tree (Artocarpus
+altilis; Moraceae) is a signature, multi-purpose-tree of the complex
+perennial agro-ecosystems systems in Oceania. This case study explores
+the ways in which the breadfruit agro-ecosystems of Hawai’i have shown
+resilience during the COVID-19 pandemic. Our study suggests that
+breadfruit has increased its value as a subsistence crop during the
+COVID-19 pandemic, even in a developed economy like Hawai’i, and that
+resilience of Hawaiian breadfruit agroe-cosystems during a crisis can be
+supported through cooperatives and food-hubs. The online version
+contains supplementary material available at 10.1186/s43170-022-00125-3.
+© The Author(s) 2022.</td>
+</tr>
+<tr class="even">
+<td align="left">36081413</td>
+<td align="left">Effect of a Condensed NBA Season on Injury Risk: An
+Analysis of the 2020 Season and Player Safety.</td>
+<td align="left">Health and safety concerns surrounding the coronavirus
+2019 (COVID-19) pandemic led the National Basketball Association (NBA)
+to condense and accelerate the 2020 season. Although prior literature
+has suggested that inadequate rest may lead to an increased injury risk,
+the unique circumstances surrounding this season offer a unique
+opportunity to evaluate player safety in the setting of reduced interval
+rest. We hypothesized that the condensed 2020 NBA season resulted in an
+increased overall injury risk as compared with the 2015 to 2018 seasons.
+Descriptive epidemiology study. A publicly available database, Pro
+Sports Transactions, was queried for injuries that forced players to
+miss ≥1 game between the 2015 and 2020 seasons. Data from the 2019
+season were omitted given the abrupt suspension of the league year. All
+injury incidences were calculated per 1000 game-exposures (GEs). The
+primary outcome was the overall injury proportion ratio (IPR) between
+the 2020 season and previous seasons. Secondary measures included injury
+incidences stratified by type, severity, age, position, and minutes per
+game. A total of 4346 injuries occurred over a 5-season span among 2572
+unique player-seasons. The overall incidence of injury during the 2020
+season was 48.20 per 1000 GEs but decreased to 39.97 per 1000 GEs when
+excluding COVID-19. Despite this exclusion, the overall injury rate in
+2020 remained significantly greater (IPR, 1.42 [95% CI, 1.32-1.52]) than
+that of the 2015 to 2018 seasons (28.20 per 1000 GEs). On closer
+evaluation, the most notable increases seen in the 2020 season occurred
+within minor injuries requiring only a 1-game absence (IPR, 1.53 [95%
+CI, 1.37-1.70]) and in players who were aged 25 to 29 years (IPR, 1.57
+[95% CI, 1.40-2.63]), averaging ≥30.0 minutes per game (IPR, 1.67 [95%
+CI, 1.47-1.90]), and playing the point guard position (IPR, 1.67 [95%
+1.44-1.95]). Players in the condensed 2020 NBA season had a
+significantly higher incidence of injuries when compared with the prior
+4 seasons, even when excluding COVID-19-related absences. This rise is
+consistent with the other congested NBA seasons of 1998 and 2011. These
+findings suggest that condensing the NBA schedule is associated with an
+increased risk to player health and safety. © The Author(s) 2022.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 
 
 
