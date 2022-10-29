@@ -1,4 +1,4 @@
-Untitled
+Lab09
 ================
 Yating Zeng
 2022-10-28
@@ -42,9 +42,9 @@ microbenchmark::microbenchmark(
 ```
 
     ## Unit: microseconds
-    ##       expr     min       lq     mean   median       uq      max neval cld
-    ##     fun1() 360.749 499.6635 576.3500 521.0420 554.6855 1864.756   100   b
-    ##  fun1alt()  19.010  22.3530  51.8252  24.5785  28.7890 2529.318   100  a
+    ##       expr     min       lq      mean   median       uq      max neval cld
+    ##     fun1() 432.843 524.1455 609.85921 558.3940 591.1895 1707.929   100   b
+    ##  fun1alt()  19.268  22.2565  70.13036  26.1085  29.1940 4259.968   100  a
 
 ``` r
 d <- matrix(1:16,ncol=4)
@@ -146,9 +146,9 @@ microbenchmark::microbenchmark(
 ```
 
     ## Unit: microseconds
-    ##        expr      min       lq     mean   median        uq      max neval cld
-    ##     fun2(x) 1029.688 1354.389 1647.486 1517.811 1661.7560 5969.595   100   b
-    ##  fun2alt(x)  133.278  161.179  232.029  185.043  216.9505 2981.335   100  a
+    ##        expr      min       lq      mean   median        uq      max neval cld
+    ##     fun2(x) 1048.929 1307.056 1650.8086 1502.335 1675.0810 8094.696   100   b
+    ##  fun2alt(x)  131.185  155.719  268.7286  174.078  206.9625 7084.246   100  a
 
 ## Problem 4. Show PSOCK cluster example
 
