@@ -1,4 +1,4 @@
-Lab09
+Untitled
 ================
 Yating Zeng
 2022-10-28
@@ -32,6 +32,8 @@ fun1alt <- function(n = 100, k = 4, lambda = 4) {
   return(x)
 }
 f1 <- fun1alt(50000,4)
+
+
 # Benchmarking
 microbenchmark::microbenchmark(
   fun1(),
@@ -40,9 +42,9 @@ microbenchmark::microbenchmark(
 ```
 
     ## Unit: microseconds
-    ##       expr     min       lq      mean   median       uq      max neval cld
-    ##     fun1() 331.825 531.2210 650.94661 568.9960 632.6835 2192.745   100   b
-    ##  fun1alt()  21.452  24.7055  53.57678  26.5215  31.1095 2402.474   100  a
+    ##       expr     min       lq     mean   median       uq      max neval cld
+    ##     fun1() 360.749 499.6635 576.3500 521.0420 554.6855 1864.756   100   b
+    ##  fun1alt()  19.010  22.3530  51.8252  24.5785  28.7890 2529.318   100  a
 
 ``` r
 d <- matrix(1:16,ncol=4)
@@ -124,6 +126,7 @@ fun2(x=M)
 ``` r
 fun2alt <- function(x) {
   # YOUR CODE HERE
+
    idx <- max.col( t(x))
    x[cbind(idx,1:4)]
 }
@@ -134,6 +137,7 @@ fun2alt(x=M)
 
 ``` r
 x <- matrix(rnorm(1e4), nrow=10)
+
 # Benchmarking
 microbenchmark::microbenchmark(
   fun2(x),
@@ -142,14 +146,16 @@ microbenchmark::microbenchmark(
 ```
 
     ## Unit: microseconds
-    ##        expr      min       lq      mean    median        uq       max neval cld
-    ##     fun2(x) 1070.801 1321.041 1770.1168 1501.5160 1900.0035 12655.914   100   b
-    ##  fun2alt(x)  143.657  159.682  238.2961  185.8995  225.1825  3059.438   100  a
+    ##        expr      min       lq     mean   median        uq      max neval cld
+    ##     fun2(x) 1029.688 1354.389 1647.486 1517.811 1661.7560 5969.595   100   b
+    ##  fun2alt(x)  133.278  161.179  232.029  185.043  216.9505 2981.335   100  a
 
 ## Problem 4. Show PSOCK cluster example
 
 ``` r
 library(parallel)
+
+
 my_boot <- function(dat, stat, R, ncpus = 1L) {
   
   # Getting the random indices
@@ -161,6 +167,7 @@ my_boot <- function(dat, stat, R, ncpus = 1L) {
   
   cl <- makePSOCKcluster(4)  
   clusterSetRNGStream(cl, 123) # Equivalent to `set.seed(123)`
+
   # STEP 2: GOES HERE
   
   clusterExport(cl,c("stat","dat","idx"),envir=environment())
@@ -183,14 +190,18 @@ my_boot <- function(dat, stat, R, ncpus = 1L) {
 ``` r
 # Bootstrap of an OLS
 my_stat <- function(d) coef(lm(y ~ x, data=d))
+
 # DATA SIM
 set.seed(1)
 n <- 500; R <- 1e4
+
 x <- cbind(rnorm(n)); y <- x*5 + rnorm(n)
+
 # Checking if we get something similar as lm
 ans0 <- confint(lm(y~x))
 ans1 <- my_boot(dat = data.frame(x, y), my_stat, R = R, ncpus = 2L)
 #stopCluster(cl)
+
 # You should get something like this
 t(apply(ans1, 2, quantile, c(.025,.975)))
 ```

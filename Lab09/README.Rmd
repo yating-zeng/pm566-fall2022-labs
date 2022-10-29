@@ -1,5 +1,5 @@
 ---
-title: "Lab09"
+title: "Untitled"
 author: "Yating Zeng"
 date: "`r Sys.Date()`"
 output: 
@@ -12,7 +12,6 @@ always_allow_html: true
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 ## Problem 2.
 
@@ -29,6 +28,8 @@ fun1 <- function(n = 100, k = 4, lambda = 4) {
 }
 f1 <- fun1(100,4)
 mean(f1)
+
+
 fun1alt <- function(n = 100, k = 4, lambda = 4) {
   # YOUR CODE HERE
   
@@ -37,11 +38,15 @@ fun1alt <- function(n = 100, k = 4, lambda = 4) {
   return(x)
 }
 f1 <- fun1alt(50000,4)
+
+
 # Benchmarking
 microbenchmark::microbenchmark(
   fun1(),
   fun1alt()
 )
+
+
 ```
 
 
@@ -69,18 +74,24 @@ Find the column max (hint: Checkout the function max.col()).
 set.seed(1234)
 M <- matrix(runif(12), ncol=4)
 M
+
 # Find each column's max value
 fun2 <- function(x) {
   apply(x, 2, max)
 }
 fun2(x=M)
+
 fun2alt <- function(x) {
   # YOUR CODE HERE
+
    idx <- max.col( t(x))
    x[cbind(idx,1:4)]
 }
 fun2alt(x=M)
+
+
 x <- matrix(rnorm(1e4), nrow=10)
+
 # Benchmarking
 microbenchmark::microbenchmark(
   fun2(x),
@@ -92,6 +103,8 @@ microbenchmark::microbenchmark(
 
 ```{r}
 library(parallel)
+
+
 my_boot <- function(dat, stat, R, ncpus = 1L) {
   
   # Getting the random indices
@@ -103,6 +116,7 @@ my_boot <- function(dat, stat, R, ncpus = 1L) {
   
   cl <- makePSOCKcluster(4)  
   clusterSetRNGStream(cl, 123) # Equivalent to `set.seed(123)`
+
   # STEP 2: GOES HERE
   
   clusterExport(cl,c("stat","dat","idx"),envir=environment())
@@ -126,15 +140,23 @@ my_boot <- function(dat, stat, R, ncpus = 1L) {
 ```{r}
 # Bootstrap of an OLS
 my_stat <- function(d) coef(lm(y ~ x, data=d))
+
 # DATA SIM
 set.seed(1)
 n <- 500; R <- 1e4
+
 x <- cbind(rnorm(n)); y <- x*5 + rnorm(n)
+
 # Checking if we get something similar as lm
 ans0 <- confint(lm(y~x))
 ans1 <- my_boot(dat = data.frame(x, y), my_stat, R = R, ncpus = 2L)
 #stopCluster(cl)
+
 # You should get something like this
 t(apply(ans1, 2, quantile, c(.025,.975)))
+
 ans0
+
+
 ```
+
