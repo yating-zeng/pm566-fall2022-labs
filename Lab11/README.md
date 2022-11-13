@@ -10,7 +10,9 @@ always_allow_html: true
 ---
 
 **HTML Report:**[**click here**](https://rawcdn.githack.com/yating-zeng/pm566-fall2022-labs/7b308594660d81235046fc7cb5d887c54fcac175/Lab11/README.html)
-** Use the web to show the html report :https://raw.githack.com/ **
+
+The html report link was gained by the website: https://raw.githack.com/
+
 **And remember to set `eval=TRUE`**
 
 ```{r setup, message=FALSE, echo=FALSE, warning=FALSE}
