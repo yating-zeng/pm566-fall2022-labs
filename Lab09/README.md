@@ -3,6 +3,7 @@ Lab09
 Yating Zeng
 2022-11-02
 
+
 ## Problem 2.
 
 Create a n x k matrix of Poisson variables with mean lambda
